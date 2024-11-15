@@ -89,7 +89,8 @@ const flightPositionTableHighBoard = {
 
 // Function to get the somersault range from the dive number
 function getSomersaultRange(diveNumber) {
-    const thirdDigit = parseInt(diveNumber.toString()[2]);
+    const diveStr = diveNumber.toString();
+    const thirdDigit = diveStr.length === 4 ? parseInt(diveStr[2]) : parseInt(diveStr[1]);
     const somersaults = thirdDigit / 2;
 
     if (somersaults <= 1) return "0-1";
@@ -104,14 +105,20 @@ function getSomersaultRange(diveNumber) {
 
 // Function to get the dive type from the dive number
 function getDiveType(diveNumber) {
-    const firstDigit = parseInt(diveNumber.toString()[0]);
-    switch (firstDigit) {
-        case 1: return "Fwd";
-        case 2: return "Back";
-        case 3: return "Rev";
-        case 4: return "Inw";
-        case 6: return "Arm"; // For high boards
-        default: return null;
+
+    // Convert diveNumber to string to access digits
+    const diveStr = diveNumber.toString();
+
+    // Determine which digit to use based on the length of the dive number
+    const typeDigit = diveStr.length === 3 ? parseInt(diveStr[0]) : parseInt(diveStr[1]);
+
+    switch (typeDigit) {
+        case 1: return "Fwd";  // Forward dive
+        case 2: return "Back"; // Backward dive
+        case 3: return "Rev";  // Reverse dive
+        case 4: return "Inw";  // Inward dive
+        case 6: return "Arm";  // Armstand dive (for high boards)
+        default: return null;  // Return null if the digit does not match any known type
     }
 }
 
@@ -120,10 +127,12 @@ function getComponentB(diveNumber, position, height) {
     const somersaultRange = getSomersaultRange(diveNumber);
     const diveType = getDiveType(diveNumber);
 
-    if (!somersaultRange || !diveType) return 'Invalid dive number';
+     if (!somersaultRange || !diveType) return 'Invalid dive number';
 
     const flightTable = ["1m", "3m"].includes(height) ? flightPositionTable1m3m : flightPositionTableHighBoard;
-    const componentB = flightTable[somersaultRange] && flightTable[somersaultRange][position] ? flightTable[somersaultRange][position][diveType] : null;
+    const componentB = flightTable[somersaultRange] && flightTable[somersaultRange][position]
+        ? flightTable[somersaultRange][position][diveType]
+        : null;
 
     return componentB !== null ? componentB : 'Invalid position or height';
 }
@@ -135,6 +144,7 @@ app.get('/:diveNumber/:position/:height', (req, res) => {
     const height = req.params.height;
 
     const componentB = getComponentB(diveNumber, position, height);
+    res.json({componentB});
     res.send(`Component B for dive ${diveNumber} at ${height} in ${position} position is: ${componentB}`);
 });
 
