@@ -58,7 +58,7 @@ const flightPositionTableHighBoard = {
         "E": { "Fwd": 0.2, "Back": 0.2, "Rev": 0.2, "Inw": 0.5, "Arm": null }
     },
     "2.5": {
-        "C": { "Fwd": 0, "Back": 0.1, "Rev": 0, "Inw": 0.2, "Arm": 0.1 },
+        "C": { "Fwd": 0.0, "Back": 0.1, "Rev": 0, "Inw": 0.2, "Arm": 0.1 },
         "B": { "Fwd": 0.2, "Back": 0.3, "Rev": 0.2, "Inw": 0.5, "Arm": 0.4 },
         "A": { "Fwd": 0.5, "Back": 0.7, "Rev": 0.6, "Inw": null, "Arm": null },
         "D": { "Fwd": 0, "Back": -0.2, "Rev": -0.2, "Inw": 0.4, "Arm": 0.2 },
@@ -90,9 +90,11 @@ const flightPositionTableHighBoard = {
 // Function to get the somersault range from the dive number
 function getSomersaultRange(diveNumber) {
     const diveStr = diveNumber.toString();
-    const thirdDigit = diveStr.length === 4 ? parseInt(diveStr[2]) : parseInt(diveStr[1]);
+    const thirdDigit = diveStr.length === 4 ? parseInt(diveStr[2]) : parseInt(diveStr[2]);
     const somersaults = thirdDigit / 2;
-
+    
+    console.log(`The Third Digit is:${somersaults}`);
+    
     if (somersaults <= 1) return "0-1";
     if (somersaults <= 2) return "1.5-2";
     if (somersaults === 2.5) return "2.5";
