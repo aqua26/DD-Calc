@@ -27,7 +27,7 @@ function calculateUnnaturalEntry(diveNumber, height) {
     } else if (somersaults === 2) {
       unnaturalEntryValue = 0.2;
     } else if (somersaults === 3) {
-      unnaturalEntryValue = 0.3;
+      unnaturalEntryValue = 0.2;
     } else if (somersaults === 4) {
       unnaturalEntryValue = (height === '1m' || height === '3m') ? 0.2 : 0.0;
     } else {
