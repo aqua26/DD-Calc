@@ -4,9 +4,10 @@ const port = 3000;
 
 // Function to calculate the approach value based on the dive number and height
 function calculateApproach(diveNumber, height) {
+  //console.log(`Received diveNumber: ${diveNumber}, type: ${typeof diveNumber}`);
 
   const diveStr = diveNumber.toString();
-    
+  
   // Determine the group digit based on the length of the dive number
   const groupDigit = diveStr.length === 4 
       ? parseInt(diveStr.charAt(1), 10) // Use 2nd digit for 4-digit dive numbers
@@ -15,7 +16,7 @@ function calculateApproach(diveNumber, height) {
   // Determine the somersaults based on the length of the dive number
   const somersaults = diveStr.length === 4
       ? parseInt(diveStr.charAt(2), 10) / 2 // 3rd digit for 4-digit dive numbers
-      : parseInt(diveStr.charAt(1), 10) / 2; // 2nd digit for 3-digit dive numbers
+      : parseInt(diveStr.charAt(2), 10) / 2; // 3rd digit for 3-digit dive numbers
 
   // Additional logic for calculating the approach based on group and somersaults can be added here
 
