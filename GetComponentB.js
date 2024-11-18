@@ -93,7 +93,7 @@ function getSomersaultRange(diveNumber) {
     const thirdDigit = diveStr.length === 4 ? parseInt(diveStr[2]) : parseInt(diveStr[2]);
     const somersaults = thirdDigit / 2;
     
-    console.log(`The Third Digit is:${somersaults}`);
+    //console.log(`The Third Digit is:${somersaults}`);
     
     if (somersaults <= 1) return "0-1";
     if (somersaults <= 2) return "1.5-2";

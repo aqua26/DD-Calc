@@ -33,21 +33,21 @@ app.get('/:diveNumber/:position/:height', async (req, res) => {
         const { diveNumber, position, height } = req.params;
         const upperPosition = position.toUpperCase();
 
-        console.log(`Received request with diveNumber: ${diveNumber}, position: ${upperPosition}, height: ${height}`);
+        //console.log(`Received request with diveNumber: ${diveNumber}, position: ${upperPosition}, height: ${height}`);
 
         // Get dive name
         const diveName = getDiveName(diveNumber);
-        console.log(`Dive Name: ${diveName}`);
+        //console.log(`Dive Name: ${diveName}`);
 
 
         // Calculate Component A
         const componentA = getDDComponentA(diveNumber, height);
-        console.log(`Component A: ${componentA}`);
+        //console.log(`Component A: ${componentA}`);
 
 
         // Calculate Component B
         const componentB = getComponentB(diveNumber, upperPosition, height);
-        console.log(`Component B: ${componentB}`);
+        //console.log(`Component B: ${componentB}`);
 
 
         // Calculate Component C (CSB or CHB)
@@ -59,16 +59,16 @@ app.get('/:diveNumber/:position/:height', async (req, res) => {
                 componentC = getComponentCHB(diveNumber, upperPosition);
             }
         }
-        console.log(`Component C: ${componentC}`);
+        //console.log(`Component C: ${componentC}`);
 
         // Calculate Component D
         const componentD = getComponentD(diveNumber, height);
-        console.log(`Component D: ${componentD}`);
+        //console.log(`Component D: ${componentD}`);
 
 
         // Calculate Component E
         const componentE = getComponentE(diveNumber, height);
-        console.log(`Component E: ${componentE}`);
+        //console.log(`Component E: ${componentE}`);
 
 
         // Validate components
