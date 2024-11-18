@@ -21,7 +21,7 @@ const flightPositionTable1m3m = {
     "2.5": {
         "C": { "Fwd": 0, "Back": 0.1, "Rev": 0, "Inw": 0.2 },
         "B": { "Fwd": 0.2, "Back": 0.3, "Rev": 0.2, "Inw": 0.5 },
-        "A": { "Fwd": 0.5, "Back": 0.7, "Rev": 0.6, "Inw": null },
+        "A": { "Fwd": 0.6, "Back": 0.7, "Rev": 0.6, "Inw": null },
         "D": { "Fwd": 0, "Back": -0.2, "Rev": -0.2, "Inw": 0.4 },
         "E": { "Fwd": 0.3, "Back": 0.3, "Rev": 0.3, "Inw": 0.7 }
     },
@@ -60,7 +60,7 @@ const flightPositionTableHighBoard = {
     "2.5": {
         "C": { "Fwd": 0.0, "Back": 0.1, "Rev": 0, "Inw": 0.2, "Arm": 0.1 },
         "B": { "Fwd": 0.2, "Back": 0.3, "Rev": 0.2, "Inw": 0.5, "Arm": 0.4 },
-        "A": { "Fwd": 0.6, "Back": 0.7, "Rev": 0.6, "Inw": null, "Arm": null },
+        "A": { "Fwd": 0.5, "Back": 0.7, "Rev": 0.6, "Inw": null, "Arm": null },
         "D": { "Fwd": 0, "Back": -0.2, "Rev": -0.2, "Inw": 0.4, "Arm": 0.2 },
         "E": { "Fwd": 0.3, "Back": 0.3, "Rev": 0.3, "Inw": 0.7, "Arm": null }
     },
