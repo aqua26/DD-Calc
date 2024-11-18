@@ -1,6 +1,8 @@
 // By Akshay Badhe
 
 const express = require('express');
+const cors = require('cors');
+const app = express();
 const getDiveName = require('./GetDiveName');
 const getDDComponentA = require('./GetComponentA');
 const getComponentB = require('./GetComponentB');
@@ -9,7 +11,9 @@ const getComponentCHB = require('./GetComponentCHB');
 const getComponentD = require('./GetComponentD');
 const getComponentE = require('./GetComponentE');
 
-const app = express();
+//const app = express();
+app.use(cors()); // This enables CORS for all routes
+
 const PORT = 3000; // Specify the port
 
 // Function to check if a dive is a twisting dive
