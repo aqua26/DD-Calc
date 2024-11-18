@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dive API Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .form-section {
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .form-section label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        .form-section input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-section input[type="radio"] {
+            margin-right: 10px;
+        }
+        .form-section button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .form-section button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+            text-transform: uppercase;
+        }
+        td {
+            background-color: #f2f2f2;
+        }
+        #tableHeader {
+            font-size: 1.1em;
+            text-align: left;
+            padding-left: 15px;
+            background-color: #007BFF; /* Darker blue */
+            color: white; /* White font color */
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dive API Tester</h1>
+    <div class="form-section">
+        <label for="diveNumber">Dive Number:</label>
+        <input type="text" id="diveNumber" placeholder="Enter dive number">
+
+        <div>
+            <label>Position:</label><br>
+            <input type="radio" name="position" value="A"> A
+            <input type="radio" name="position" value="B"> B
+            <input type="radio" name="position" value="C"> C
+            <input type="radio" name="position" value="D"> D
+        </div>
+
+        <div>
+            <label>Height:</label><br>
+            <input type="radio" name="height" value="1m"> 1m
+            <input type="radio" name="height" value="3m"> 3m
+            <input type="radio" name="height" value="5m"> 5m
+            <input type="radio" name="height" value="7.5m"> 7.5m
+            <input type="radio" name="height" value="10m"> 10m
+        </div>
+
+        <button onclick="fetchDiveData()">Submit</button>
+    </div>
+
+    <table id="resultsTable" style="display: none;">
+        <thead>
+            <tr>
+                <th colspan="6" id="tableHeader">Dive Name with Position & Height</th>
+            </tr>
+            <tr>
+                <th>A</th>
+                <th>B</th>
+                <th>C</th>
+                <th>D</th>
+                <th>E</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+    </table>
+
+    <script>
+        async function fetchDiveData() {
+            const diveNumber = document.getElementById('diveNumber').value;
+            const position = document.querySelector('input[name="position"]:checked');
+            const height = document.querySelector('input[name="height"]:checked');
+
+            if (!diveNumber || !position || !height) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const apiUrl = `https://dd-calc.onrender.com/${diveNumber}/${position.value}/${height.value}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('API Response:', data); // For debugging
+
+                document.getElementById('resultsTable').style.display = 'table';
+                document.getElementById('tableHeader').textContent = `${data.diveName} - Position: ${data.divePosition}, Height: ${data.height}`;
+                
+                const tableBody = document.getElementById('resultsBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td>${data.componentA}</td>
+                        <td>${data.componentB}</td>
+                        <td>${data.componentC}</td>
+                        <td>${data.componentD}</td>
+                        <td>${data.componentE}</td>
+                        <td>${data.totalDegreeOfDifficulty.toFixed(1)}</td>
+                    </tr>
+                `;
+            } catch (error) {
+                alert(`Error fetching data: ${error.message}`);
+                console.error('Error details:', error);
+            }
+        }
+    </script>
+</body>
+</html>
