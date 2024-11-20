@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "686874697311",
+    "project_id": "dd-calc",
+    "storage_bucket": "dd-calc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686874697311:android:7e3cc86f29708695fe85ea",
+        "android_client_info": {
+          "package_name": "dd.calc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzQZJcJohmj0LQonoWCxVsFnT7R-Eq-Uo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

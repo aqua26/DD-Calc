@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dive Input Table</title>
+    
+    <script>
+    function validateScoreInput(input, rowId) {
+    if (input.value.toUpperCase() === 'F') {
+        alert('Fail dive detected. All scores will be set to 0.');
+        for (let i = 1; i <= 7; i++) {
+            const scoreInput = document.getElementById(`score-${rowId}-${i}`);
+            scoreInput.value = 0; // Set all score inputs to 0
+            scoreInput.classList.remove('strikethrough'); // Remove any strikethrough classes
+        }
+        document.getElementById(`finalScore-${rowId}`).value = '0'; // Set final score to 0
+        return;
+    }
+
+    const value = parseFloat(input.value);
+    if (value > 10) {
+        alert('Score must not exceed 10.');
+        input.value = ''; // Clear the input field
+    } else if (value < 0.5 && value !== 0) {
+        alert('Score must be at least 0.5.');
+        input.value = ''; // Clear the input field
+    }
+}
+
+function calculateFinalScore(rowId) {
+    const scores = [];
+    const scoreElements = [];
+
+    // Collect scores and their corresponding input elements
+    for (let i = 1; i <= 7; i++) {
+        const scoreInput = document.getElementById(`score-${rowId}-${i}`);
+        if (scoreInput && scoreInput.value) {
+            scores.push(parseFloat(scoreInput.value));
+            scoreElements.push(scoreInput);
+        }
+        // Remove any previous strikethrough class
+        if (scoreInput) {
+            scoreInput.classList.remove('strikethrough');
+        }
+    }
+
+    if (scores.length >= 5) {
+        // Sort scores and keep references to the original inputs
+        const sortedScores = [...scores].sort((a, b) => a - b);
+
+        // Mark the lowest and highest scores with strikethrough
+        const lowestScoreIndex = scores.indexOf(sortedScores[0]);
+        const highestScoreIndex = scores.indexOf(sortedScores[sortedScores.length - 1]);
+
+        if (scoreElements[lowestScoreIndex]) {
+            scoreElements[lowestScoreIndex].classList.add('strikethrough');
+        }
+        if (scoreElements[highestScoreIndex]) {
+            scoreElements[highestScoreIndex].classList.add('strikethrough');
+        }
+
+        // Remove the highest and lowest scores and calculate the total
+        const validScores = scores.filter((score, index) => index !== lowestScoreIndex && index !== highestScoreIndex);
+        const totalValidScores = validScores.reduce((sum, score) => sum + score, 0);
+        const degreeOfDifficulty = parseFloat(document.getElementById(`degree-${rowId}`).value);
+
+        if (!isNaN(degreeOfDifficulty)) {
+            const finalScore = (totalValidScores * degreeOfDifficulty).toFixed(2);
+            document.getElementById(`finalScore-${rowId}`).value = finalScore;
+
+            // Calculate the cumulative total score
+            updateTotalScore(rowId, parseFloat(finalScore));
+        } else {
+            document.getElementById(`finalScore-${rowId}`).value = 'N/A';
+        }
+    } else {
+        document.getElementById(`finalScore-${rowId}`).value = 'Insufficient Scores';
+    }
+}
+
+function updateTotalScore(rowId, currentFinalScore) {
+    let cumulativeTotal = 0;
+    for (let i = 1; i <= rowId; i++) {
+        const finalScoreInput = document.getElementById(`finalScore-${i}`);
+        if (finalScoreInput && finalScoreInput.value && !isNaN(parseFloat(finalScoreInput.value))) {
+            cumulativeTotal += parseFloat(finalScoreInput.value);
+        }
+    }
+    document.getElementById(`totalScore-${rowId}`).value = cumulativeTotal.toFixed(2);
+}
+
+        function updateHeights() {
+        const boardHeight = document.getElementById('boardHeight').value;
+
+        for (let i = 1; i <= 15; i++) {
+            const heightInput = document.getElementById(`height-${i}`);
+            if (boardHeight === '1m' || boardHeight === '3m') {
+                // Set the height value to '1m' or '3m' and disable the input
+                heightInput.innerHTML = ''; // Clear any existing options
+                heightInput.innerHTML = `<option value="${boardHeight}">${boardHeight}</option>`;
+                heightInput.value = boardHeight;
+                heightInput.disabled = true; // Disable to prevent user modification
+                autoCalculateDifficulty(i); // Trigger calculation for each row
+            } else if (boardHeight === 'high') {
+                // Allow users to select from the high board options (5m, 7.5m, 10m)
+                heightInput.disabled = false; // Enable for user selection
+                heightInput.innerHTML = `
+                    <option value="5m">5 M</option>
+                    <option value="7.5m">7.5 M</option>
+                    <option value="10m">10 M</option>
+                `;
+                heightInput.value = ''; // Reset the value to ensure the user selects it
+            }
+        }
+    }
+
+function autoCalculateDifficulty(rowId) {
+    const diveNumber = document.getElementById(`diveNumber-${rowId}`).value;
+    const position = document.getElementById(`position-${rowId}`).value;
+    const height = document.getElementById(`height-${rowId}`).value;
+
+    if (diveNumber && position && height) {
+        calculateDegreeOfDifficulty(diveNumber, position, height, rowId);
+    }
+}
+
+async function autoCalculateDifficulty(rowId) {
+    const diveNumber = document.getElementById(`diveNumber-${rowId}`).value;
+    const position = document.getElementById(`position-${rowId}`).value;
+    const height = document.getElementById(`height-${rowId}`).value;
+    const degreeInput = document.getElementById(`degree-${rowId}`);
+
+    // Clear existing custom tooltips
+    const existingTooltip = degreeInput.parentElement.querySelector('.custom-tooltip');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+
+    if (diveNumber && position && height) {
+        try {
+            const response = await fetch(`https://dd-calc.onrender.com/${diveNumber}/${position}/${height}`);
+            if (response.ok) {
+                const data = await response.json();
+                degreeInput.value = data.totalDegreeOfDifficulty || 'N/A';
+
+                // Format the D.D. value to one decimal place if it's a valid number
+                const formattedDegree = data.totalDegreeOfDifficulty
+                    ? parseFloat(data.totalDegreeOfDifficulty).toFixed(1) // Ensures one decimal place
+                    : 'N/A';
+
+                degreeInput.value = formattedDegree;
+
+                // Create a custom tooltip container
+                const tooltip = document.createElement('div');
+                tooltip.className = 'custom-tooltip';
+                tooltip.innerHTML = `
+                    <strong style="font-size: 14px; font-weight: bold;">${data.diveName || 'N/A'}</strong><br>
+                    <strong>A:</strong> ${data.componentA || 'N/A'}<br>
+                    <strong>B:</strong> ${data.componentB || 'N/A'}<br>
+                    <strong>C:</strong> ${data.componentC || 'N/A'}<br>
+                    <strong>D:</strong> ${data.componentD || 'N/A'}<br>
+                    <strong>E:</strong> ${data.componentE || 'N/A'}
+                `;
+
+                // Add the tooltip to the parent container
+                const tooltipContainer = document.createElement('div');
+                tooltipContainer.className = 'tooltip-container';
+                degreeInput.parentElement.appendChild(tooltipContainer);
+                tooltipContainer.appendChild(degreeInput);
+                tooltipContainer.appendChild(tooltip);
+            } else {
+                degreeInput.value = 'Error';
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            degreeInput.value = 'Error';
+        }
+    } else {
+        degreeInput.value = '';
+    }
+}
+
+async function calculateDegreeOfDifficulty(diveNumber, position, height, rowId) {
+    try {
+        const response = await fetch(`https://dd-calc.onrender.com/${diveNumber}/${position}/${height}`);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('API Response:', data); // Log the response for debugging
+
+            // Round totalDegreeOfDifficulty to one decimal place
+            const formattedDifficulty = parseFloat(data.totalDegreeOfDifficulty).toFixed(1);
+
+            document.getElementById(`degree-${rowId}`).value = isNaN(formattedDifficulty) ? 'N/A' : formattedDifficulty;
+        } else {
+            console.error('Error: Response not OK', response.status);
+            document.getElementById(`degree-${rowId}`).value = 'Error';
+        }
+    } catch (error) {
+        console.error('Fetch error:', error);
+        document.getElementById(`degree-${rowId}`).value = 'Error';
+    }
+}
+
+function validateScoreInput(input, rowId) {
+    if (input.value.toUpperCase() === 'F') {
+        alert('Fail dive detected. All scores will be set to 0.');
+        for (let i = 1; i <= 7; i++) {
+            const scoreInput = document.getElementById(`score-${rowId}-${i}`);
+            scoreInput.value = 0; // Set all score inputs to 0
+            scoreInput.classList.remove('strikethrough'); // Remove any strikethrough classes
+        }
+        document.getElementById(`finalScore-${rowId}`).value = '0'; // Set final score to 0
+        return;
+    }
+
+    const value = parseFloat(input.value);
+    if (value > 10) {
+        alert('Score must not exceed 10.');
+        input.value = ''; // Clear the input field
+    } else if (value < 0.5 && value !== 0) {
+        alert('Score must be at least 0.5.');
+        input.value = ''; // Clear the input field
+    }
+
+    // Check if it's the first row
+    if (rowId === 1) {
+        // Count the number of scores entered
+        const firstRowScores = [];
+        for (let i = 1; i <= 7; i++) {
+            const scoreInput = document.getElementById(`score-1-${i}`);
+            if (scoreInput && scoreInput.value) {
+                firstRowScores.push(parseFloat(scoreInput.value));
+            }
+        }
+
+        // If there are 5 scores, disable the last 2 judge inputs in all other rows
+        if (firstRowScores.length === 5) {
+            for (let i = 2; i <= 15; i++) {
+                for (let j = 6; j <= 7; j++) {
+                    const scoreInput = document.getElementById(`score-${i}-${j}`);
+                    if (scoreInput) {
+                        scoreInput.value = ''; // Clear the input
+                        scoreInput.disabled = true; // Disable the input
+                    }
+                }
+            }
+        } else {
+            // Re-enable inputs if more than 5 scores are entered in the first row
+            for (let i = 2; i <= 15; i++) {
+                for (let j = 6; j <= 7; j++) {
+                    const scoreInput = document.getElementById(`score-${i}-${j}`);
+                    if (scoreInput) {
+                        scoreInput.disabled = false; // Enable the input
+                    }
+                }
+            }
+        }
+    }
+}
+    </script>
+</head>
+<body>
+    <div id="diveFormContainer">
+
+    <h1 contenteditable="true" id="formTitle" oninput="updatePageTitle()">Dive Input Form</h1>
+
+    <script>
+        // Function to update the page title based on the heading input
+        function updatePageTitle() {
+            const formTitle = document.getElementById('formTitle').innerText;
+            document.title = formTitle || 'Dive Input Form'; // Default title if the heading is empty
+        }
+    
+        // Initialize the page title with the existing heading
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePageTitle();
+        });
+    </script>
+    
+    <form>
+        <form>
+            <div class="form-inline">
+                <label for="diverName">Name of the Diver:</label>
+                <input type="text" id="diverName" name="diverName">
+        
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" min="1">
+        
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+        
+                <div class="right-aligned">
+                    <label for="boardHeight">Height of the Board:</label>
+                    <select id="boardHeight" name="boardHeight" onchange="updateHeights()">
+                        <option value="1m">1 Meter Spring Board</option>
+                        <option value="3m">3 Meter Spring Board</option>
+                        <option value="high">High Board</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Dive Number</th>
+                    <th>Position</th>
+                    <th>Height</th>
+                    <th>D.D.</th>
+                    <th colspan="7">Scores (7 Judges)</th>
+                    <th>Final Score</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <script>
+                    for (let i = 1; i <= 15; i++) {
+                        document.write(`
+                            <tr>
+                                <td>${i}</td>
+                                <td><input type="text" id="diveNumber-${i}" onchange="autoCalculateDifficulty(${i})"></td>
+                                <td>
+                                    <select id="position-${i}" onchange="autoCalculateDifficulty(${i})">
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                        <option value="D">D</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select id="height-${i}" class="height-input" onchange="autoCalculateDifficulty(${i})" disabled>
+                                        <option value="">Select Height</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" id="degree-${i}" readonly class="score-input"></td>
+                                ${[...Array(7)].map((_, j) => `
+                                    <td><input type="text" id="score-${i}-${j+1}" class="score-input" oninput="validateScoreInput(this, ${i}); calculateFinalScore(${i})"></td>
+                                `).join('')}
+                                <td><input type="text" id="finalScore-${i}" readonly class="final-score"></td>
+                                <td><input type="text" id="totalScore-${i}" readonly class="total-score"></td>
+                            </tr>
+                        `);
+                    }
+                </script>
+            </tbody>
+        </table>
+    </div>
+            <!-- Clear and Reload Button -->
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="clear-button" onclick="clearForm()">Clear Form</button>
+            </div>
+
+            <script>
+                // Function to reload the page and clear the form
+                function clearForm() {
+                    location.reload(); // This reloads the page, effectively clearing all inputs
+                }
+            </script>
+
+
+<!-- PDF Generation Button -->
+<div style="text-align: center; margin-top: 20px;">
+    <button class="clear-button" onclick="generateStyledPDF()">Generate PDF (Stage 1)</button>
+</div>
+<script>
+    async function generateStyledPDF() {
+        // Get form details
+        const heading = document.getElementById('formTitle').innerText || 'Dive Input Form';
+        const diverName = document.getElementById('diverName').value || '';
+        const age = document.getElementById('age').value || '';
+        const gender = document.getElementById('gender').value || '';
+        const boardHeight = document.getElementById('boardHeight').value || '';
+
+        // Initialize a new PDF document
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        let page = pdfDoc.addPage([842, 595]); // A4 Landscape (842 x 595 points)
+
+        // Fonts and positions
+        const fontSizeHeading = 34;
+        const fontSizeDetails = 14;
+        const fontSizeTable = 12;
+        const headerHeight = 30;
+        const cellHeight = 25;
+        const leftMargin = 30;
+        const pageWidth = 842 - leftMargin * 2; // Full width excluding margins
+        let yPosition = 540; // Start position for content
+
+        // Define column widths proportional to the page width
+        const columnWidths = [
+            pageWidth * 0.05, // No.
+            pageWidth * 0.1,  // Dive
+            pageWidth * 0.08, // Position
+            pageWidth * 0.08, // Height
+            pageWidth * 0.07, // D.D.
+            pageWidth * 0.05, // Score 1
+            pageWidth * 0.05, // Score 2
+            pageWidth * 0.05, // Score 3
+            pageWidth * 0.05, // Score 4
+            pageWidth * 0.05, // Score 5
+            pageWidth * 0.05, // Score 6
+            pageWidth * 0.05, // Score 7
+            pageWidth * 0.15, // Score
+            pageWidth * 0.12, // Total (Reduced width)
+        ];
+
+        // Add the heading
+        page.drawText(heading, {
+            x: (842 - heading.length * fontSizeHeading * 0.4) / 2, // Center-align heading
+            y: yPosition,
+            size: fontSizeHeading,
+            color: PDFLib.rgb(0, 0, 1), // Blue color
+        });
+
+        yPosition -= 40; // Adjust position for next line
+
+        // Add diver details
+        page.drawText(
+            `Name: ${diverName}  |  Age: ${age}  |  Gender: ${gender}  |  Board Height: ${boardHeight}`,
+            {
+                x: leftMargin,
+                y: yPosition,
+                size: fontSizeDetails,
+                color: PDFLib.rgb(0, 0, 0), // Black color
+            }
+        );
+
+        yPosition -= 50; // Increase spacing to make the header float above the table
+
+        // Define table headers
+        const tableHeaders = [
+            'No.',
+            'Dive',
+            'Position',
+            'Height',
+            'D.D.',
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+            '7',
+            'Score',
+            'Total',
+        ];
+
+        // Draw top border line for the header
+        page.drawLine({
+            start: { x: leftMargin, y: yPosition + headerHeight },
+            end: { x: leftMargin + pageWidth, y: yPosition + headerHeight },
+            thickness: 1,
+            color: PDFLib.rgb(0, 0, 0),
+        });
+
+        // Draw table headers
+        let xPosition = leftMargin;
+        for (let i = 0; i < tableHeaders.length; i++) {
+            const headerTextWidth = tableHeaders[i].length * fontSizeTable * 0.5; // Approx. width of the text
+            const textX = xPosition + (columnWidths[i] - headerTextWidth) / 2; // Center horizontally
+            const textY = yPosition + (headerHeight / 2) - (fontSizeTable / 2); // Center vertically
+
+            page.drawText(tableHeaders[i], {
+                x: textX,
+                y: textY,
+                size: fontSizeTable,
+                color: PDFLib.rgb(0, 0, 0),
+            });
+
+            // Draw vertical lines for headers
+            page.drawLine({
+                start: { x: xPosition, y: yPosition + headerHeight },
+                end: { x: xPosition, y: yPosition },
+                thickness: 1,
+                color: PDFLib.rgb(0, 0, 0),
+            });
+
+            xPosition += columnWidths[i];
+        }
+
+        // Ensure the last vertical line aligns with the table edge
+        page.drawLine({
+            start: { x: xPosition, y: yPosition + headerHeight },
+            end: { x: xPosition, y: yPosition - (cellHeight * 15) }, // Matches the total table height
+            thickness: 1,
+            color: PDFLib.rgb(0, 0, 0),
+        });
+
+        // Draw a line between the header and the first row
+        page.drawLine({
+            start: { x: leftMargin, y: yPosition },
+            end: { x: leftMargin + pageWidth, y: yPosition },
+            thickness: 1,
+            color: PDFLib.rgb(0, 0, 0),
+        });
+
+        yPosition -= cellHeight; // Adjust position for table rows
+
+        // Populate table rows
+        for (let i = 1; i <= 15; i++) {
+            const diveNumber = document.getElementById(`diveNumber-${i}`)?.value || '';
+            const position = document.getElementById(`position-${i}`)?.value || '';
+            const height = document.getElementById(`height-${i}`)?.value || '';
+            const degree = document.getElementById(`degree-${i}`)?.value || '';
+            const scores = Array.from({ length: 7 }, (_, j) =>
+                document.getElementById(`score-${i}-${j + 1}`)?.value || ''
+            );
+            const finalScore = document.getElementById(`finalScore-${i}`)?.value || '';
+            const totalScore = document.getElementById(`totalScore-${i}`)?.value || '';
+
+            const rowData = [i, diveNumber, position, height, degree, ...scores, finalScore, totalScore];
+
+            xPosition = leftMargin;
+
+            for (let j = 0; j < rowData.length; j++) {
+                const cellData = rowData[j].toString();
+                const cellTextWidth = cellData.length * fontSizeTable * 0.5; // Approx. width of the text
+                const textX = xPosition + (columnWidths[j] - cellTextWidth) / 2; // Center horizontally
+                const textY = yPosition + (cellHeight / 2) - (fontSizeTable / 2); // Center vertically
+
+                // Draw cell text
+                page.drawText(cellData, {
+                    x: textX,
+                    y: textY,
+                    size: fontSizeTable,
+                    color: PDFLib.rgb(0, 0, 0),
+                });
+
+                // Draw vertical lines for cells
+                page.drawLine({
+                    start: { x: xPosition, y: yPosition + cellHeight },
+                    end: { x: xPosition, y: yPosition },
+                    thickness: 1,
+                    color: PDFLib.rgb(0, 0, 0),
+                });
+
+                xPosition += columnWidths[j];
+            }
+
+            // Ensure the last vertical line aligns for rows
+            page.drawLine({
+                start: { x: xPosition, y: yPosition + cellHeight },
+                end: { x: xPosition, y: yPosition },
+                thickness: 1,
+                color: PDFLib.rgb(0, 0, 0),
+            });
+
+            // Draw horizontal line for the row
+            page.drawLine({
+                start: { x: leftMargin, y: yPosition },
+                end: { x: leftMargin + pageWidth, y: yPosition },
+                thickness: 1,
+                color: PDFLib.rgb(0, 0, 0),
+            });
+
+            yPosition -= cellHeight; // Move to the next row
+
+            // Add a new page if content exceeds the page height
+            if (yPosition < 30) {
+                yPosition = 540;
+                page = pdfDoc.addPage([842, 595]);
+            }
+        }
+
+        // Save the PDF and create a download link
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${heading}.pdf`;
+        link.click();
+    }
+</script>
+
+</form>
+</body>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 10px;
+        background-color: #f0f8ff;
+        color: #333;
+    }
+
+    h1 {
+        text-align: center;
+        color: #1e3a8a;
+        font-size: 28px;
+        margin-bottom: 15px;
+    }
+
+    .form-inline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between; /* Distributes space evenly */
+        gap: 12px;
+        margin-bottom: 20px;
+        background-color: transparent;
+    }
+
+    .form-inline label {
+        font-weight: bold;
+        font-size: 14px;
+        color: #1e3a8a;
+    }
+
+    .form-inline input[type="text"],
+    .form-inline input[type="number"],
+    .form-inline select {
+        padding: 3px 4px;
+        border: none;
+        border-bottom: 2px solid #1e3a8a;
+        border-radius: 0;
+        font-size: 14px;
+        background-color: transparent;
+        margin-bottom: 5px;
+        transition: border-color 0.3s, background-color 0.3s;
+        width: 60px;
+        text-align: left; /* Aligns the text to the left */
+    }
+
+    /* Specific styling for "Name of the Diver" */
+    .form-inline input#diverName {
+        width: 350px; /* Set to 350px */
+    }
+
+    /* Specific styling for "Gender" dropdown */
+    .form-inline select#gender {
+        width: 90px; /* 30px wider than the default */
+    }
+
+    /* Specific styling for the "Height of the Board" dropdown */
+    .form-inline select#boardHeight {
+        width: 170px; /* Increased width */
+        background-color: #e0f2ff;
+        padding-right: 20px;
+        appearance: none;
+        position: relative;
+        text-align: left; /* Aligns dropdown text to the left */
+    }
+
+    .form-inline select#boardHeight::after {
+        content: '▼'; /* Custom arrow */
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        color: #1e3a8a;
+        pointer-events: none;
+    }
+
+    .right-aligned {
+        margin-left: auto; /* Pushes this container to the right */
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .form-inline input[type="text"]:focus,
+    .form-inline input[type="number"]:focus,
+    .form-inline select:focus {
+        border-color: #3b82f6;
+        outline: none;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 15px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+        padding: 5px 3px;
+        text-align: center;
+        border-bottom: 1px solid #e0e7ff;
+    }
+
+    th {
+        background-color: #1e3a8a;
+        color: #ffffff;
+        font-size: 14px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f3f8ff;
+    }
+
+    tr:hover {
+        background-color: #dbeafe;
+    }
+
+    input[readonly] {
+        background-color: #f0f8ff;
+        color: #333;
+        border: none;
+        border-bottom: 2px solid #1e3a8a;
+        font-size: 13px;
+        width: 60px;
+        padding: 3px 4px;
+    }
+
+    select.height-input {
+        width: 60px;
+        border: none;
+        border-bottom: 2px solid #1e3a8a;
+        background-color: #e0f2ff;
+        padding: 3px 4px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .form-inline {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            font-size: 12px;
+            width: 100%; /* Full width on smaller screens */
+        }
+
+        h1 {
+            font-size: 22px;
+        }
+
+        table, th, td {
+            font-size: 12px;
+            padding: 6px;
+        }
+    }
+
+    .strikethrough {
+        text-decoration: line-through;
+        color: #d9534f; /* Red color for emphasis */
+    }
+
+    /* Remove arrow keys from number input fields */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        -moz-appearance: textfield; /* For Firefox */
+    }
+
+    .score-input {
+        width: 30px; /* Reduced width */
+        height: 22px;
+        font-size: 15px; /* Increased font size */
+        text-align: center;
+        border: 1px solid #1e3a8a;
+    }
+
+    .final-score,
+    .total-score {
+        font-size: 16px; /* Bigger font size for visibility */
+        font-weight: bold;
+        text-align: center;
+        border: none;
+        background-color: #f0f8ff; /* Light background */
+    }
+
+    .strikethrough {
+        text-decoration: line-through;
+        color: #d9534f; /* Red color for emphasis */
+    }
+
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .tooltip-container .custom-tooltip {
+        visibility: hidden;
+        background-color: rgba(255, 165, 0, 0.9); /* Light orange with slight transparency */
+        color: #333; /* Dark text for contrast */
+        text-align: left;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 1;
+        top: 50%; /* Centered vertically */
+        left: 100%; /* Positioned to the right of the input */
+        margin-left: 10px; /* Space between the input and the tooltip */
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+        font-weight: bold; /* Make the font bold */
+        white-space: nowrap; /* Prevents line breaks */
+        max-width: 300px; /* Maximum width for dynamic resizing */
+        overflow-wrap: break-word; /* Allows line breaks for long text */
+    }
+
+    .tooltip-container:hover .custom-tooltip {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .tooltip-container .custom-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 50%; /* Middle of the tooltip */
+        left: -5px; /* Positioned at the left edge */
+        transform: translateY(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent transparent rgba(255, 165, 0, 0.9); /* Arrow pointing to the left */
+    }
+
+    .clear-button {
+        background-color: #1e90ff; /* Cool blue background */
+        color: #fff; /* White text */
+        border: none;
+        padding: 12px 24px; /* Comfortable padding */
+        font-size: 16px;
+        border-radius: 8px; /* Rounded corners */
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.3s; /* Smooth transition effects */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    }
+
+    .clear-button:hover {
+        background-color: #1c86ee; /* Slightly darker blue on hover */
+        transform: translateY(-2px); /* Lift effect on hover */
+    }
+
+    .clear-button:active {
+        background-color: #187bcd; /* Even darker blue when clicked */
+        transform: translateY(1px); /* Pressed down effect */
+    }
+
+    .clear-text-input {
+        border: none;
+        background-color: transparent;
+        font-size: 14px; /* Adjust as needed */
+        padding: 0;
+        margin: 0;
+    }
+</style>
+
+</html>
